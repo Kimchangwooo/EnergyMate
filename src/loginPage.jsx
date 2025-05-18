@@ -3,7 +3,7 @@ import logoImage from './assets/EnergyMate_LoGo.png';
 
 function LoginPage() {
   const loginWith = (provider) => {
-    const backendBaseUrl = 'http://43.203.242.216'; // ← 실제 백엔드 배포 주소
+    const backendBaseUrl = 'http://3.36.111.107'; // ← 실제 백엔드 배포 주소
     window.location.href = `${backendBaseUrl}/oauth2/authorize/${provider}`;
   };
 

@@ -1,47 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function DashboardPage() {
-  const [buildingCount, setBuildingCount] = useState(0);
+  const navigate = useNavigate();
+
+  const [selectedBuilding, setSelectedBuilding] = useState('building1');
+  const [selectedDate, setSelectedDate] = useState('2021-04-15');
   const [activeUsers, setActiveUsers] = useState(0);
   const [predictedBill, setPredictedBill] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
   const [roomStats, setRoomStats] = useState([]);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
+
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      navigate('/login');
+      return;
+    }
+
+    if (!selectedBuilding || !selectedDate) return;
+
     const headers = {
       Authorization: `Bearer ${accessToken}`,
     };
-  
-    const buildingName = 'BuildingA'; // 서버에 등록된 정확한 빌딩 이름
-    const date = '2021-04-15';
-  
-    // ✅ 건물 수 조회
+
+    const month = selectedDate.slice(0, 7);
+    const floor = 1;
+
     axios
-      .get('http://3.36.111.107/api/building/count', { headers })
-      .then((res) => {
-        setBuildingCount(res.data.result || 0);
-      })
-      .catch((err) => {
-        console.error('건물 수 조회 실패:', err);
-      });
-  
-    // ✅ 빌딩 이름 기반 일일 전력 사용량 조회 (방어 코드 포함)
-    axios
-      .get(`http://3.36.111.107/api/building/name/${buildingName}/daily`, {
+      .get(`http://3.36.111.107/api/building/name/${selectedBuilding}/daily`, {
         headers,
-        params: { date },
+        params: { date: selectedDate },
       })
       .then((res) => {
-        console.log('빌딩 응답 데이터:', res.data); // 🔍 디버깅용
-  
         const data = res.data?.result;
         if (!data) {
-          console.warn('⚠️ result가 없습니다. buildingName/date 확인 필요');
+          console.warn('⚠️ result가 없습니다.');
           return;
         }
-  
+
         setTotalBill(data.totalPower || 0);
         setPieData({
           lighting: data.hourlyData?.additionalProp1 || 0,
@@ -54,19 +53,93 @@ function DashboardPage() {
             cost: Math.round((data.totalPower || 0) * 120),
           },
         ]);
+
+        const groupId = data.groupId;
+
+        axios
+          .get(`http://3.36.111.107/api/building/${groupId}/${month}/prediction`, { headers })
+          .then((res) => {
+            const predicted = res.data?.result?.predictedValue ?? 0;
+            setPredictedBill(predicted);
+          })
+          .catch((err) => console.error('예측 전기세 조회 실패:', err));
+
+        axios
+          .get(`http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`, {
+            headers,
+            params: { date: selectedDate },
+          })
+          .then((res) => console.log('✅ 층별 실시간 사용량:', res.data?.result))
+          .catch((err) => console.error('층별 데이터 조회 실패:', err));
+
+        axios
+          .get(`http://3.36.111.107/api/building/${groupId}/floor/${floor}/${month}/prediction`, {
+            headers,
+          })
+          .then((res) => console.log('✅ 층별 예측 사용량:', res.data?.result?.totalUsage))
+          .catch((err) => console.error('층별 예측 사용량 조회 실패:', err));
+
+        axios
+          .get(`http://3.36.111.107/api/building/${groupId}/daily`, {
+            headers,
+            params: { date: selectedDate },
+          })
+          .then((res) => console.log('✅ 그룹 ID 기반 전력 사용량:', res.data?.result))
+          .catch((err) => console.error('그룹 전력 사용량 조회 실패:', err));
       })
-      .catch((err) => {
-        console.error('빌딩 데이터 조회 실패:', err);
-      });
-  }, []);
-  
+      .catch((err) => console.error('빌딩 데이터 조회 실패:', err));
+  }, [selectedBuilding, selectedDate, navigate]);
 
   return (
     <div style={{ background: '#F4F7FE', minHeight: '100vh', padding: '32px' }}>
       <h2 style={{ color: '#2B3674' }}>대시보드</h2>
 
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <Card title="건물 수" value={buildingCount} />
+        <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
+          <div style={{ color: '#A3AED0', fontSize: '14px' }}>건물 선택</div>
+          <select
+            value={selectedBuilding}
+            onChange={(e) => setSelectedBuilding(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '8px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '16px',
+              backgroundColor: '#fff',
+              color: '#2B3674',
+              appearance: 'none',
+            }}
+          >
+            {Array.from({ length: 10 }, (_, i) => (
+              <option key={i} value={`building${i + 1}`}>
+                building{i + 1}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
+          <div style={{ color: '#A3AED0', fontSize: '14px' }}>날짜 선택</div>
+          <input
+            type="date"
+            min="2021-04-01"
+            max="2021-06-30"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '8px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '16px',
+              color: '#2B3674',
+            }}
+          />
+        </div>
+
         <Card title="예상 전기세" value={`₩ ${predictedBill.toLocaleString()}`} />
         <Card title="Active users" value={activeUsers} />
       </div>
