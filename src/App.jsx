@@ -9,6 +9,8 @@ function App() {
       <Route path="/" element={<DashboardPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/login/oauth2/success" element={<AuthCallback />} />   {/* ✅ 성공 시 */}
+      <Route path="/login/oauth2/failure" element={<LoginPage />} />      {/* ✅ 실패 시 */}
     </Routes>
   );
 }
