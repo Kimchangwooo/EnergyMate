@@ -43,15 +43,11 @@ function DashboardPage() {
         params: { date: selectedDate },
       })
       .then((res) => {
-        console.log('API 전체 응답:', res.data);
-
         const data = res.data?.result;
         if (!data) {
           console.warn('⚠️ result가 없습니다.');
           return;
         }
-
-        console.log('data:', data);
 
         setTotalBill(data.totalPower || 0);
         setPieData({
