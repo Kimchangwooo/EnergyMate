@@ -13,13 +13,21 @@ function DashboardPage() {
   const [roomStats, setRoomStats] = useState([]);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
 
+  // 로그인 토큰 검사 및 로그인 페이지 리다이렉트
   useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // 데이터 요청 버튼 클릭 시 호출하는 API 함수
+  const fetchData = () => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
       navigate('/login');
       return;
     }
-
     if (!selectedBuilding || !selectedDate) return;
 
     const headers = {
@@ -88,12 +96,30 @@ function DashboardPage() {
           .catch((err) => console.error('그룹 전력 사용량 조회 실패:', err));
       })
       .catch((err) => console.error('빌딩 데이터 조회 실패:', err));
-  }, [selectedBuilding, selectedDate, navigate]);
+  };
 
   return (
     <div style={{ background: '#F4F7FE', minHeight: '100vh', padding: '32px' }}>
-      <h2 style={{ color: '#2B3674' }}>대시보드</h2>
+      {/* 제목과 버튼 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <h2 style={{ color: '#2B3674', margin: 0 }}>대시보드</h2>
+        <button
+          onClick={fetchData}
+          style={{
+            padding: '6px 12px',
+            fontSize: '14px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: '#2B3674',
+            color: 'white',
+          }}
+        >
+          데이터 요청하기
+        </button>
+      </div>
 
+      {/* 선택 UI */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
           <div style={{ color: '#A3AED0', fontSize: '14px' }}>건물 선택</div>
@@ -144,11 +170,13 @@ function DashboardPage() {
         <Card title="Active users" value={activeUsers} />
       </div>
 
+      {/* 차트 */}
       <div style={{ display: 'flex', marginTop: '20px', gap: '20px' }}>
         <PieChart lighting={pieData.lighting} aircon={pieData.aircon} />
         <LineChart totalBill={totalBill} />
       </div>
 
+      {/* 그룹별 통계 */}
       <div
         style={{
           background: 'white',
