@@ -161,7 +161,8 @@ function DashboardPage() {
               borderRadius: '8px',
               border: '1px solid #ccc',
               fontSize: '16px',
-              color: '#2B3674',
+              color: '#ffffff',      // 날짜 글자 색 흰색으로 변경
+              backgroundColor: '#000000', // 날짜 배경 검정 (가독성 위해)
             }}
           />
         </div>
@@ -185,7 +186,7 @@ function DashboardPage() {
           padding: '20px',
         }}
       >
-        <h3 style={{ color: '#000000' }}>그룹별 통계</h3>
+        <h3 style={{ color: '#000000' }}>그룹별 통계</h3>  {/* 글자 색 까만색 */}
         {roomStats.map((room, i) => (
           <RoomRow key={i} room={room} />
         ))}
@@ -198,7 +199,7 @@ function Card({ title, value }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
       <div style={{ color: '#A3AED0', fontSize: '14px' }}>{title}</div>
-      <div style={{ color: '#000000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div>
+      <div style={{ color: '#000000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div> {/* 글자 까만색 */}
     </div>
   );
 }
@@ -206,8 +207,8 @@ function Card({ title, value }) {
 function PieChart({ lighting, aircon }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '500px' }}>
-      <h4 style={{ color: '#000000' }}>전기세 분석</h4>
-      <p style={{ color: '#000000' }}>조명: {lighting}% / 시스템 에어컨: {aircon}%</p>
+      <h4 style={{ color: '#000000' }}>전기세 분석</h4>   {/* 글자 까만색 */}
+      <p style={{ color: '#000000' }}>조명: {lighting}% / 시스템 에어컨: {aircon}%</p> {/* 글자 까만색 */}
     </div>
   );
 }
@@ -215,8 +216,8 @@ function PieChart({ lighting, aircon }) {
 function LineChart({ totalBill }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '800px' }}>
-      <h4 style={{ color: '#000000' }}>전체 전기세</h4>
-      <p style={{ color: '#000000' }}>{totalBill.toLocaleString()}원</p>
+      <h4 style={{ color: '#000000' }}>전체 전기세</h4>  {/* 글자 까만색 */}
+      <p style={{ color: '#000000' }}>{totalBill.toLocaleString()}원</p> {/* 글자 까만색 */}
     </div>
   );
 }
