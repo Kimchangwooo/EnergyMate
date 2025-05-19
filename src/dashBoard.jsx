@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 function DashboardPage() {
   const navigate = useNavigate();
 
+  // 상태 선언
   const [selectedBuilding, setSelectedBuilding] = useState('building1');
   const [selectedDate, setSelectedDate] = useState('2021-04-15');
   const [activeUsers, setActiveUsers] = useState(0);
@@ -13,7 +14,7 @@ function DashboardPage() {
   const [roomStats, setRoomStats] = useState([]);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
 
-  // 로그인 토큰 검사 및 로그인 페이지 리다이렉트
+  // 로그인 토큰 검사
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
@@ -21,7 +22,7 @@ function DashboardPage() {
     }
   }, [navigate]);
 
-  // 데이터 요청 버튼 클릭 시 호출하는 API 함수
+  // API 호출 함수
   const fetchData = () => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
@@ -43,28 +44,32 @@ function DashboardPage() {
         params: { date: selectedDate },
       })
       .then((res) => {
-        console.log('API 전체 응답:', res.data);
-
         const data = res.data?.result;
         if (!data) {
           console.warn('⚠️ result가 없습니다.');
           return;
         }
 
-        console.log('data:', data);
-
+        // 상태 업데이트 및 로그 출력
         setTotalBill(data.totalPower || 0);
-        setPieData({
+        console.log('totalBill:', data.totalPower || 0);
+
+        const newPieData = {
           lighting: data.hourlyData?.additionalProp1 || 0,
           aircon: data.hourlyData?.additionalProp2 || 0,
-        });
-        setRoomStats([
+        };
+        setPieData(newPieData);
+        console.log('pieData:', newPieData);
+
+        const newRoomStats = [
           {
             name: `Group ${data.groupId}`,
             usage: data.totalPower || 0,
             cost: Math.round((data.totalPower || 0) * 120),
           },
-        ]);
+        ];
+        setRoomStats(newRoomStats);
+        console.log('roomStats:', newRoomStats);
 
         const groupId = data.groupId;
 
@@ -73,9 +78,11 @@ function DashboardPage() {
           .then((res) => {
             const predicted = res.data?.result?.predictedValue ?? 0;
             setPredictedBill(predicted);
+            console.log('predictedBill:', predicted);
           })
           .catch((err) => console.error('예측 전기세 조회 실패:', err));
 
+        // 추가 API 호출은 로그만 찍음
         axios
           .get(`http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`, {
             headers,
@@ -199,6 +206,7 @@ function DashboardPage() {
 }
 
 function Card({ title, value }) {
+  console.log(`Card ${title}:`, value);
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
       <div style={{ color: '#A3AED0', fontSize: '14px' }}>{title}</div>
@@ -208,6 +216,7 @@ function Card({ title, value }) {
 }
 
 function PieChart({ lighting, aircon }) {
+  console.log('PieChart:', lighting, aircon);
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '500px' }}>
       <h4 style={{ color: '#2B3674' }}>전기세 분석</h4>
@@ -217,6 +226,7 @@ function PieChart({ lighting, aircon }) {
 }
 
 function LineChart({ totalBill }) {
+  console.log('LineChart totalBill:', totalBill);
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '800px' }}>
       <h4 style={{ color: '#2B3674' }}>전체 전기세</h4>
@@ -226,6 +236,7 @@ function LineChart({ totalBill }) {
 }
 
 function RoomRow({ room }) {
+  console.log('RoomRow:', room);
   return (
     <div
       style={{
