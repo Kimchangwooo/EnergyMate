@@ -38,25 +38,7 @@ function DashboardPage() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // 05월 예측 전기세
-    axios
-      .get(
-        `http://3.36.111.107/api/building/${selectedBuilding}/2021-05/prediction`,
-        { headers }
-      )
-      .then((res) => setPredictedMay(res.data.result?.predictedValue ?? 0))
-      .catch(() => {});
-
-    // 06월 예측 전기세
-    axios
-      .get(
-        `http://3.36.111.107/api/building/${selectedBuilding}/2021-06/prediction`,
-        { headers }
-      )
-      .then((res) => setPredictedJun(res.data.result?.predictedValue ?? 0))
-      .catch(() => {});
-
-    // 선택 날짜의 일별 데이터 (전체·파이·시간별)
+    // 빌딩 일별 데이터 조회
     axios
       .get(
         `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
@@ -66,17 +48,38 @@ function DashboardPage() {
         const d = res.data.result;
         if (!d) return;
 
+        // 전체 전기세
         setTotalBill(d.totalPower || 0);
+        // 전기세 분석용 파이 데이터
         setPieData({
           lighting: d.hourlyData.additionalProp1 || 0,
           aircon: d.hourlyData.additionalProp2 || 0,
         });
+        // 시간별 사용량
         setHourlyData(
           Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
         );
 
-        // 1~6층 실시간 사용량
         const groupId = d.groupId;
+
+        // 05월 예측 전기세
+        axios
+          .get(
+            `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
+            { headers }
+          )
+          .then((r) => setPredictedMay(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
+        // 06월 예측 전기세
+        axios
+          .get(
+            `http://3.36.111.107/api/building/${groupId}/2021-06/prediction`,
+            { headers }
+          )
+          .then((r) => setPredictedJun(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
+
+        // 1~6층 실시간 사용량
         Promise.all(
           [1, 2, 3, 4, 5, 6].map((floor) =>
             axios
@@ -84,10 +87,7 @@ function DashboardPage() {
                 `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
                 { headers, params: { date: selectedDate } }
               )
-              .then((r) => ({
-                floor,
-                usage: r.data.result.totalPower || 0,
-              }))
+              .then((r) => ({ floor, usage: r.data.result.totalPower || 0 }))
               .catch(() => ({ floor, usage: 0 }))
           )
         ).then(setFloorData);
@@ -103,13 +103,9 @@ function DashboardPage() {
         <button
           onClick={fetchData}
           style={{
-            padding: '6px 12px',
-            fontSize: '14px',
-            borderRadius: '6px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: '#2B3674',
-            color: 'white',
+            padding: '6px 12px', fontSize: '14px',
+            borderRadius: '6px', border: 'none',
+            cursor: 'pointer', backgroundColor: '#2B3674', color: 'white',
           }}
         >
           데이터 요청하기
@@ -118,17 +114,8 @@ function DashboardPage() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <Control
-          label="건물 선택"
-          value={selectedBuilding}
-          onChange={setSelectedBuilding}
-        />
-        <Control
-          label="날짜 선택"
-          isDate
-          value={selectedDate}
-          onChange={setSelectedDate}
-        />
+        <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
+        <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
         <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
         <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
         <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
