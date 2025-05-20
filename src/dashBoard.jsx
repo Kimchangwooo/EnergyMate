@@ -38,10 +38,10 @@ function DashboardPage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     axios
-      .get(`http://3.36.111.107/api/building/name/${selectedBuilding}/daily`, {
-        headers,
-        params: { date: selectedDate },
-      })
+      .get(
+        `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
+        { headers, params: { date: selectedDate } }
+      )
       .then((res) => {
         const d = res.data.result;
         if (!d) return;
@@ -94,7 +94,9 @@ function DashboardPage() {
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}
+      >
         <h2 style={{ color: '#2B3674', margin: 0 }}>대시보드</h2>
         <button
           onClick={fetchData}
@@ -122,8 +124,13 @@ function DashboardPage() {
         }}
       >
         <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
-        <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
-        <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
+        <Control
+          label="날짜 선택"
+          isDate
+          value={selectedDate}
+          onChange={setSelectedDate}
+        />
+        <Card title="당일 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
       {/* 2nd row: 예측 전기세 */}
@@ -155,6 +162,8 @@ function Control({ label, value, onChange, isDate }) {
       {isDate ? (
         <input
           type="date"
+          min="2021-04-12"
+          max="2021-06-30"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{
