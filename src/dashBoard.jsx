@@ -89,13 +89,12 @@ function DashboardPage() {
         background: '#F4F7FE',
         minHeight: '100vh',
         padding: '32px',
-        maxWidth: '1200px',
-        margin: '0 auto',
+        width: '100%',
         overflowX: 'hidden',
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <h2 style={{ color: '#2B3674', margin: 0 }}>대시보드</h2>
         <button
           onClick={fetchData}
@@ -114,14 +113,28 @@ function DashboardPage() {
       </div>
 
       {/* 1st row: Controls + 전체 전기세 */}
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '20px',
+          marginTop: '20px',
+          flexWrap: 'wrap',
+        }}
+      >
         <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
         <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
         <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
       {/* 2nd row: 예측 전기세 */}
-      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '20px',
+          marginTop: '20px',
+          flexWrap: 'wrap',
+        }}
+      >
         <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
         <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
       </div>
@@ -171,9 +184,7 @@ function Control({ label, value, onChange, isDate }) {
           }}
         >
           {Array.from({ length: 10 }, (_, i) => (
-            <option key={i} value={`building${i + 1}`}>
-              building{i + 1}
-            </option>
+            <option key={i} value={`building${i + 1}`}>{`building${i + 1}`}</option>
           ))}
         </select>
       )}
