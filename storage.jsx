@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -10,10 +20,9 @@ function DashboardPage() {
   const [activeUsers, setActiveUsers] = useState(0);
   const [predictedBill, setPredictedBill] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
-  const [roomStats, setRoomStats] = useState([]);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
+  const [hourlyData, setHourlyData] = useState([]);
 
-  // 로그인 토큰 검사 및 로그인 페이지 리다이렉트
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
@@ -21,7 +30,6 @@ function DashboardPage() {
     }
   }, [navigate]);
 
-  // 데이터 요청 버튼 클릭 시 호출하는 API 함수
   const fetchData = () => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
@@ -35,7 +43,6 @@ function DashboardPage() {
     };
 
     const month = selectedDate.slice(0, 7);
-    const floor = 1;
 
     axios
       .get(`http://3.36.111.107/api/building/name/${selectedBuilding}/daily`, {
@@ -54,13 +61,13 @@ function DashboardPage() {
           lighting: data.hourlyData?.additionalProp1 || 0,
           aircon: data.hourlyData?.additionalProp2 || 0,
         });
-        setRoomStats([
-          {
-            name: `Group ${data.groupId}`,
-            usage: data.totalPower || 0,
-            cost: Math.round((data.totalPower || 0) * 120),
-          },
-        ]);
+
+        // 시간별 데이터 배열 변환
+        const hourlyArray = Object.entries(data.hourlyData || {}).map(([hour, value]) => ({
+          hour,
+          usage: value,
+        }));
+        setHourlyData(hourlyArray);
 
         const groupId = data.groupId;
 
@@ -71,29 +78,6 @@ function DashboardPage() {
             setPredictedBill(predicted);
           })
           .catch((err) => console.error('예측 전기세 조회 실패:', err));
-
-        axios
-          .get(`http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`, {
-            headers,
-            params: { date: selectedDate },
-          })
-          .then((res) => console.log('✅ 층별 실시간 사용량:', res.data?.result))
-          .catch((err) => console.error('층별 데이터 조회 실패:', err));
-
-        axios
-          .get(`http://3.36.111.107/api/building/${groupId}/floor/${floor}/${month}/prediction`, {
-            headers,
-          })
-          .then((res) => console.log('✅ 층별 예측 사용량:', res.data?.result?.totalUsage))
-          .catch((err) => console.error('층별 예측 사용량 조회 실패:', err));
-
-        axios
-          .get(`http://3.36.111.107/api/building/${groupId}/daily`, {
-            headers,
-            params: { date: selectedDate },
-          })
-          .then((res) => console.log('✅ 그룹 ID 기반 전력 사용량:', res.data?.result))
-          .catch((err) => console.error('그룹 전력 사용량 조회 실패:', err));
       })
       .catch((err) => console.error('빌딩 데이터 조회 실패:', err));
   };
@@ -161,8 +145,8 @@ function DashboardPage() {
               borderRadius: '8px',
               border: '1px solid #ccc',
               fontSize: '16px',
-              color: '#ffffff',      // 날짜 글자 색 흰색으로 변경
-              backgroundColor: '#000000', // 날짜 배경 검정 (가독성 위해)
+              color: '#ffffff',
+              backgroundColor: '#000000',
             }}
           />
         </div>
@@ -174,22 +158,30 @@ function DashboardPage() {
       {/* 차트 */}
       <div style={{ display: 'flex', marginTop: '20px', gap: '20px' }}>
         <PieChart lighting={pieData.lighting} aircon={pieData.aircon} />
-        <LineChart totalBill={totalBill} />
+        <SummaryLineChart totalBill={totalBill} style={{ flex: 1, maxWidth: '400px' }} />
       </div>
 
-      {/* 그룹별 통계 */}
+      {/* 시간별 전력 사용량 차트 */}
       <div
         style={{
           background: 'white',
           borderRadius: '20px',
           marginTop: '40px',
           padding: '20px',
+          height: '300px',
         }}
       >
-        <h3 style={{ color: '#000000' }}>그룹별 통계</h3>  {/* 글자 색 까만색 */}
-        {roomStats.map((room, i) => (
-          <RoomRow key={i} room={room} />
-        ))}
+        <h3 style={{ color: '#000000' }}>시간별 전력 사용량</h3>
+        <ResponsiveContainer width="100%" height="90%">
+          <RechartsLineChart data={hourlyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="hour" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="usage" stroke="#8884d8" activeDot={{ r: 8 }} />
+          </RechartsLineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -199,7 +191,7 @@ function Card({ title, value }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
       <div style={{ color: '#A3AED0', fontSize: '14px' }}>{title}</div>
-      <div style={{ color: '#000000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div> {/* 글자 까만색 */}
+      <div style={{ color: '#000000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div>
     </div>
   );
 }
@@ -207,36 +199,30 @@ function Card({ title, value }) {
 function PieChart({ lighting, aircon }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '500px' }}>
-      <h4 style={{ color: '#000000' }}>전기세 분석</h4>   {/* 글자 까만색 */}
-      <p style={{ color: '#000000' }}>조명: {lighting}% / 시스템 에어컨: {aircon}%</p> {/* 글자 까만색 */}
+      <h4 style={{ color: '#000000' }}>전기세 분석</h4>
+      <p style={{ color: '#000000' }}>
+        조명: {lighting}% / 시스템 에어컨: {aircon}%
+      </p>
     </div>
   );
 }
 
-function LineChart({ totalBill }) {
-  return (
-    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '800px' }}>
-      <h4 style={{ color: '#000000' }}>전체 전기세</h4>  {/* 글자 까만색 */}
-      <p style={{ color: '#000000' }}>{totalBill.toLocaleString()}원</p> {/* 글자 까만색 */}
-    </div>
-  );
-}
-
-function RoomRow({ room }) {
+function SummaryLineChart({ totalBill }) {
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '10px 0',
-        borderBottom: '1px solid #eee',
+        background: 'white',
+        borderRadius: '20px',
+        padding: '20px',
+        maxWidth: '400px',
+        width: '100%',
       }}
     >
-      <div style={{ fontWeight: 'bold' }}>{room.name}</div>
-      <div>{room.usage}kWh</div>
-      <div>{room.cost.toLocaleString()}원</div>
+      <h4 style={{ color: '#000000' }}>전체 전기세</h4>
+      <p style={{ color: '#000000' }}>{totalBill.toLocaleString()}원</p>
     </div>
   );
 }
 
 export default DashboardPage;
+ 

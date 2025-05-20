@@ -10,6 +10,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
 
 function DashboardPage() {
@@ -17,31 +19,23 @@ function DashboardPage() {
 
   const [selectedBuilding, setSelectedBuilding] = useState('building1');
   const [selectedDate, setSelectedDate] = useState('2021-04-15');
-  const [activeUsers, setActiveUsers] = useState(0);
   const [predictedBill, setPredictedBill] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
   const [hourlyData, setHourlyData] = useState([]);
+  const [floorData, setFloorData] = useState([]); // 1~6층 사용량
 
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      navigate('/login');
-    }
+    const token = localStorage.getItem('accessToken');
+    if (!token) navigate('/login');
   }, [navigate]);
 
   const fetchData = () => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      navigate('/login');
-      return;
-    }
+    const token = localStorage.getItem('accessToken');
+    if (!token) return navigate('/login');
     if (!selectedBuilding || !selectedDate) return;
 
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-    };
-
+    const headers = { Authorization: `Bearer ${token}` };
     const month = selectedDate.slice(0, 7);
 
     axios
@@ -50,130 +44,163 @@ function DashboardPage() {
         params: { date: selectedDate },
       })
       .then((res) => {
-        const data = res.data?.result;
-        if (!data) {
-          console.warn('⚠️ result가 없습니다.');
-          return;
-        }
+        const d = res.data.result;
+        if (!d) return console.warn('result empty');
 
-        setTotalBill(data.totalPower || 0);
+        // 총/예측/파이/시간별
+        setTotalBill(d.totalPower || 0);
         setPieData({
-          lighting: data.hourlyData?.additionalProp1 || 0,
-          aircon: data.hourlyData?.additionalProp2 || 0,
+          lighting: d.hourlyData?.additionalProp1 || 0,
+          aircon: d.hourlyData?.additionalProp2 || 0,
         });
+        setHourlyData(
+          Object.entries(d.hourlyData || {}).map(([h, v]) => ({ hour: h, usage: v }))
+        );
 
-        // 시간별 데이터 배열 변환
-        const hourlyArray = Object.entries(data.hourlyData || {}).map(([hour, value]) => ({
-          hour,
-          usage: value,
-        }));
-        setHourlyData(hourlyArray);
+        // 1~6층 실시간 사용량
+        const groupId = d.groupId;
+        Promise.all(
+          [1, 2, 3, 4, 5, 6].map((floor) =>
+            axios
+              .get(
+                `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
+                { headers, params: { date: selectedDate } }
+              )
+              .then(r => ({
+                floor,
+                usage: r.data.result?.totalPower ?? 0
+              }))
+              .catch(() => ({ floor, usage: 0 }))
+          )
+        ).then(setFloorData);
 
-        const groupId = data.groupId;
-
+        // 예측 전기세
         axios
           .get(`http://3.36.111.107/api/building/${groupId}/${month}/prediction`, { headers })
-          .then((res) => {
-            const predicted = res.data?.result?.predictedValue ?? 0;
-            setPredictedBill(predicted);
-          })
-          .catch((err) => console.error('예측 전기세 조회 실패:', err));
+          .then(r => setPredictedBill(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
       })
-      .catch((err) => console.error('빌딩 데이터 조회 실패:', err));
+      .catch(err => console.error(err));
   };
 
   return (
     <div style={{ background: '#F4F7FE', minHeight: '100vh', padding: '32px' }}>
-      {/* 제목과 버튼 */}
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <h2 style={{ color: '#2B3674', margin: 0 }}>대시보드</h2>
         <button
           onClick={fetchData}
           style={{
-            padding: '6px 12px',
-            fontSize: '14px',
-            borderRadius: '6px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: '#2B3674',
-            color: 'white',
+            padding: '6px 12px', fontSize: '14px',
+            borderRadius: '6px', border: 'none',
+            cursor: 'pointer', backgroundColor: '#2B3674', color: 'white',
           }}
         >
           데이터 요청하기
         </button>
       </div>
 
-      {/* 선택 UI */}
+      {/* Controls */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-        <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
-          <div style={{ color: '#A3AED0', fontSize: '14px' }}>건물 선택</div>
-          <select
-            value={selectedBuilding}
-            onChange={(e) => setSelectedBuilding(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginTop: '8px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '16px',
-              backgroundColor: '#fff',
-              color: '#2B3674',
-              appearance: 'none',
-            }}
-          >
-            {Array.from({ length: 10 }, (_, i) => (
-              <option key={i} value={`building${i + 1}`}>
-                building{i + 1}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
-          <div style={{ color: '#A3AED0', fontSize: '14px' }}>날짜 선택</div>
-          <input
-            type="date"
-            min="2021-04-01"
-            max="2021-06-30"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginTop: '8px',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '16px',
-              color: '#ffffff',
-              backgroundColor: '#000000',
-            }}
-          />
-        </div>
-
+        <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
+        <Control
+          label="날짜 선택"
+          isDate
+          value={selectedDate}
+          onChange={setSelectedDate}
+        />
         <Card title="예상 전기세" value={`₩ ${predictedBill.toLocaleString()}`} />
-        <Card title="Active users" value={activeUsers} />
+        <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={400} />
       </div>
 
-      {/* 차트 */}
-      <div style={{ display: 'flex', marginTop: '20px', gap: '20px' }}>
-        <PieChart lighting={pieData.lighting} aircon={pieData.aircon} />
-        <SummaryLineChart totalBill={totalBill} style={{ flex: 1, maxWidth: '400px' }} />
+      {/* 전기세 분석 (파이) */}
+      <div style={{ background: 'white', borderRadius: '20px', padding: '20px', marginTop: '20px', width: '500px' }}>
+        <h4 style={{ color: '#000' }}>전기세 분석</h4>
+        <p style={{ color: '#000' }}>
+          조명: {pieData.lighting}% / 시스템 에어컨: {pieData.aircon}%
+        </p>
       </div>
 
-      {/* 시간별 전력 사용량 차트 */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '20px',
-          marginTop: '40px',
-          padding: '20px',
-          height: '300px',
-        }}
-      >
-        <h3 style={{ color: '#000000' }}>시간별 전력 사용량</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <RechartsLineChart data={hourlyData}>
+      {/* 시간별 사용량 차트 */}
+      <ChartContainer title="시간별 전력 사용량" data={hourlyData} />
+
+      {/* 1~6층 실시간 사용량 차트 */}
+      <ChartContainer title="층별 실시간 사용량 (1~6층)" data={floorData} bar />
+
+    </div>
+  );
+}
+
+// reusable controls
+function Control({ label, value, onChange, isDate }) {
+  return (
+    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
+      <div style={{ color: '#A3AED0', fontSize: '14px' }}>{label}</div>
+      {isDate ? (
+        <input
+          type="date"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
+            border: '1px solid #ccc', fontSize: '16px', color: '#fff', backgroundColor: '#000',
+          }}
+        />
+      ) : (
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
+            border: '1px solid #ccc', fontSize: '16px', backgroundColor: '#fff', color: '#2B3674',
+          }}
+        >
+          {Array.from({ length: 10 }, (_, i) => (
+            <option key={i} value={`building${i + 1}`}>
+              building{i + 1}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
+// 카드
+function Card({ title, value, width = 300 }) {
+  return (
+    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width }}>
+      <div style={{ color: '#A3AED0', fontSize: '14px' }}>{title}</div>
+      <div style={{ color: '#000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div>
+    </div>
+  );
+}
+
+// 차트 렌더러
+function ChartContainer({ title, data, bar = false }) {
+  return (
+    <div
+      style={{
+        background: 'white',
+        borderRadius: '20px',
+        marginTop: '40px',
+        padding: '20px',
+        height: '300px',
+      }}
+    >
+      <h3 style={{ color: '#000', marginBottom: 0 }}>{title}</h3>
+      <ResponsiveContainer width="100%" height="85%">
+        {bar ? (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={bar ? 'floor' : 'hour'} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="usage" fill="#8884d8" />
+          </BarChart>
+        ) : (
+          <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="hour" />
             <YAxis />
@@ -181,48 +208,10 @@ function DashboardPage() {
             <Legend />
             <Line type="monotone" dataKey="usage" stroke="#8884d8" activeDot={{ r: 8 }} />
           </RechartsLineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function Card({ title, value }) {
-  return (
-    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
-      <div style={{ color: '#A3AED0', fontSize: '14px' }}>{title}</div>
-      <div style={{ color: '#000000', fontSize: '24px', fontWeight: 'bold' }}>{value}</div>
-    </div>
-  );
-}
-
-function PieChart({ lighting, aircon }) {
-  return (
-    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '500px' }}>
-      <h4 style={{ color: '#000000' }}>전기세 분석</h4>
-      <p style={{ color: '#000000' }}>
-        조명: {lighting}% / 시스템 에어컨: {aircon}%
-      </p>
-    </div>
-  );
-}
-
-function SummaryLineChart({ totalBill }) {
-  return (
-    <div
-      style={{
-        background: 'white',
-        borderRadius: '20px',
-        padding: '20px',
-        maxWidth: '400px',
-        width: '100%',
-      }}
-    >
-      <h4 style={{ color: '#000000' }}>전체 전기세</h4>
-      <p style={{ color: '#000000' }}>{totalBill.toLocaleString()}원</p>
+        )}
+      </ResponsiveContainer>
     </div>
   );
 }
 
 export default DashboardPage;
- 
