@@ -23,7 +23,7 @@ function DashboardPage() {
   const [predictedJun, setPredictedJun] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
   const [hourlyData, setHourlyData] = useState([]);
-  const [floorData, setFloorData] = useState([]); // 1~6층 사용량
+  const [floorData, setFloorData] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -38,23 +38,20 @@ function DashboardPage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     axios
-      .get(
-        `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
-        { headers, params: { date: selectedDate } }
-      )
+      .get(`http://3.36.111.107/api/building/name/${selectedBuilding}/daily`, {
+        headers,
+        params: { date: selectedDate },
+      })
       .then((res) => {
         const d = res.data.result;
         if (!d) return;
 
-        // 전체 전기세 설정
         setTotalBill(d.totalPower || 0);
-        // 시간별 사용량 배열
         setHourlyData(
           Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
         );
 
         const groupId = d.groupId;
-        // 05월·06월 예측 전기세 동시 요청
         Promise.all([
           axios.get(
             `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
@@ -71,7 +68,6 @@ function DashboardPage() {
           })
           .catch(() => {});
 
-        // 1~6층 실시간 사용량
         Promise.all(
           [1, 2, 3, 4, 5, 6].map((floor) =>
             axios
@@ -88,7 +84,16 @@ function DashboardPage() {
   };
 
   return (
-    <div style={{ background: '#F4F7FE', minHeight: '100vh', padding: '32px' }}>
+    <div
+      style={{
+        background: '#F4F7FE',
+        minHeight: '100vh',
+        padding: '32px',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        overflowX: 'hidden',
+      }}
+    >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <h2 style={{ color: '#2B3674', margin: 0 }}>대시보드</h2>
@@ -108,14 +113,14 @@ function DashboardPage() {
         </button>
       </div>
 
-      {/* Controls: 건물/날짜/전체전기세 */}
+      {/* 1st row: Controls + 전체 전기세 */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
         <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
         <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
-      {/* 2nd row: 05월/06월 예측 전기세 */}
+      {/* 2nd row: 예측 전기세 */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
         <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
@@ -130,7 +135,9 @@ function DashboardPage() {
 
 function Control({ label, value, onChange, isDate }) {
   return (
-    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
+    <div
+      style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}
+    >
       <div style={{ color: '#A3AED0', fontSize: '14px' }}>{label}</div>
       {isDate ? (
         <input
@@ -138,8 +145,14 @@ function Control({ label, value, onChange, isDate }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{
-            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
-            border: '1px solid #ccc', fontSize: '16px', color: '#fff', backgroundColor: '#000',
+            width: '100%',
+            padding: '10px',
+            marginTop: '8px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '16px',
+            color: '#fff',
+            backgroundColor: '#000',
           }}
         />
       ) : (
@@ -147,8 +160,14 @@ function Control({ label, value, onChange, isDate }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{
-            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
-            border: '1px solid #ccc', fontSize: '16px', backgroundColor: '#fff', color: '#2B3674',
+            width: '100%',
+            padding: '10px',
+            marginTop: '8px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '16px',
+            backgroundColor: '#fff',
+            color: '#2B3674',
           }}
         >
           {Array.from({ length: 10 }, (_, i) => (
