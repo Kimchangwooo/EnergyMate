@@ -22,7 +22,6 @@ function DashboardPage() {
   const [predictedMay, setPredictedMay] = useState(0);
   const [predictedJun, setPredictedJun] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
-  const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
   const [hourlyData, setHourlyData] = useState([]);
   const [floorData, setFloorData] = useState([]); // 1~6층 사용량
 
@@ -50,11 +49,6 @@ function DashboardPage() {
 
         // 전체 전기세
         setTotalBill(d.totalPower || 0);
-        // 전기세 분석용 파이 데이터
-        setPieData({
-          lighting: d.hourlyData.additionalProp1 || 0,
-          aircon: d.hourlyData.additionalProp2 || 0,
-        });
         // 시간별 사용량
         setHourlyData(
           Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
@@ -62,21 +56,21 @@ function DashboardPage() {
 
         const groupId = d.groupId;
 
-        // 05월 예측 전기세
-        axios
-          .get(
+        // 05월 / 06월 예측 전기세 조회
+        Promise.all([
+          axios.get(
             `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
             { headers }
-          )
-          .then((r) => setPredictedMay(r.data.result?.predictedValue ?? 0))
-          .catch(() => {});
-        // 06월 예측 전기세
-        axios
-          .get(
+          ),
+          axios.get(
             `http://3.36.111.107/api/building/${groupId}/2021-06/prediction`,
             { headers }
-          )
-          .then((r) => setPredictedJun(r.data.result?.predictedValue ?? 0))
+          ),
+        ])
+          .then(([mayRes, junRes]) => {
+            setPredictedMay(mayRes.data.result?.predictedValue ?? 0);
+            setPredictedJun(junRes.data.result?.predictedValue ?? 0);
+          })
           .catch(() => {});
 
         // 1~6층 실시간 사용량
@@ -116,45 +110,24 @@ function DashboardPage() {
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
         <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
+        {/* 제거된 전기세 분석영역 대신 예측 카드로 채움 */}
         <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
         <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
         <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
-      {/* 전기세 분석 */}
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '20px',
-          padding: '20px',
-          marginTop: '20px',
-          width: '500px',
-        }}
-      >
-        <h4 style={{ color: '#000' }}>전기세 분석</h4>
-        <p style={{ color: '#000' }}>
-          조명: {pieData.lighting}% / 시스템 에어컨: {pieData.aircon}%
-        </p>
-      </div>
-
-      {/* 차트들 */}
+      {/* 시간별 전력 사용량 차트 */}
       <ChartContainer title="시간별 전력 사용량" data={hourlyData} />
+      {/* 층별 실시간 사용량 차트 */}
       <ChartContainer title="층별 실시간 사용량" data={floorData} bar />
     </div>
   );
 }
 
-// reusable controls
+// reusable control 컴포넌트
 function Control({ label, value, onChange, isDate }) {
   return (
-    <div
-      style={{
-        background: 'white',
-        borderRadius: '20px',
-        padding: '20px',
-        width: '300px',
-      }}
-    >
+    <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
       <div style={{ color: '#A3AED0', fontSize: '14px' }}>{label}</div>
       {isDate ? (
         <input
@@ -162,14 +135,8 @@ function Control({ label, value, onChange, isDate }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{
-            width: '100%',
-            padding: '10px',
-            marginTop: '8px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '16px',
-            color: '#fff',
-            backgroundColor: '#000',
+            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
+            border: '1px solid #ccc', fontSize: '16px', color: '#fff', backgroundColor: '#000',
           }}
         />
       ) : (
@@ -177,14 +144,8 @@ function Control({ label, value, onChange, isDate }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           style={{
-            width: '100%',
-            padding: '10px',
-            marginTop: '8px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '16px',
-            backgroundColor: '#fff',
-            color: '#2B3674',
+            width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px',
+            border: '1px solid #ccc', fontSize: '16px', backgroundColor: '#fff', color: '#2B3674',
           }}
         >
           {Array.from({ length: 10 }, (_, i) => (
@@ -208,7 +169,7 @@ function Card({ title, value, width = 300 }) {
   );
 }
 
-// 차트 컨테이너
+// 차트 렌더러
 function ChartContainer({ title, data, bar = false }) {
   return (
     <div
@@ -238,12 +199,7 @@ function ChartContainer({ title, data, bar = false }) {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Line
-              type="monotone"
-              dataKey="usage"
-              stroke="#8884d8"
-              activeDot={{ r: 8 }}
-            />
+            <Line type="monotone" dataKey="usage" stroke="#8884d8" activeDot={{ r: 8 }} />
           </RechartsLineChart>
         )}
       </ResponsiveContainer>
