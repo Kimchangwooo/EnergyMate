@@ -20,6 +20,8 @@ function DashboardPage() {
   const [selectedBuilding, setSelectedBuilding] = useState('building1');
   const [selectedDate, setSelectedDate] = useState('2021-04-15');
   const [predictedBill, setPredictedBill] = useState(0);
+  const [predictedMay, setPredictedMay] = useState(0);
+  const [predictedJun, setPredictedJun] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
   const [pieData, setPieData] = useState({ lighting: 0, aircon: 0 });
   const [hourlyData, setHourlyData] = useState([]);
@@ -37,28 +39,59 @@ function DashboardPage() {
 
     const headers = { Authorization: `Bearer ${token}` };
     const month = selectedDate.slice(0, 7);
+    const monthMay = '2021-05';
+    const monthJun = '2021-06';
 
+    // 빌딩 일별 데이터
     axios
-      .get(`http://3.36.111.107/api/building/name/${selectedBuilding}/daily`, {
-        headers,
-        params: { date: selectedDate },
-      })
+      .get(
+        `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
+        { headers, params: { date: selectedDate } }
+      )
       .then((res) => {
         const d = res.data.result;
         if (!d) return console.warn('result empty');
 
-        // 총/예측/파이/시간별
+        // 전체 전기세
         setTotalBill(d.totalPower || 0);
+        // 파이 차트용 데이터
         setPieData({
           lighting: d.hourlyData?.additionalProp1 || 0,
           aircon: d.hourlyData?.additionalProp2 || 0,
         });
+        // 시간별 데이터
         setHourlyData(
           Object.entries(d.hourlyData || {}).map(([h, v]) => ({ hour: h, usage: v }))
         );
 
-        // 1~6층 실시간 사용량
         const groupId = d.groupId;
+
+        // 예측 전기세 - 선택월
+        axios
+          .get(
+            `http://3.36.111.107/api/building/${groupId}/${month}/prediction`,
+            { headers }
+          )
+          .then((r) => setPredictedBill(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
+        // 예측 전기세 - 05월
+        axios
+          .get(
+            `http://3.36.111.107/api/building/${groupId}/${monthMay}/prediction`,
+            { headers }
+          )
+          .then((r) => setPredictedMay(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
+        // 예측 전기세 - 06월
+        axios
+          .get(
+            `http://3.36.111.107/api/building/${groupId}/${monthJun}/prediction`,
+            { headers }
+          )
+          .then((r) => setPredictedJun(r.data.result?.predictedValue ?? 0))
+          .catch(() => {});
+
+        // 1~6층 실시간 사용량
         Promise.all(
           [1, 2, 3, 4, 5, 6].map((floor) =>
             axios
@@ -66,21 +99,12 @@ function DashboardPage() {
                 `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
                 { headers, params: { date: selectedDate } }
               )
-              .then(r => ({
-                floor,
-                usage: r.data.result?.totalPower ?? 0
-              }))
+              .then((r) => ({ floor, usage: r.data.result?.totalPower ?? 0 }))
               .catch(() => ({ floor, usage: 0 }))
           )
         ).then(setFloorData);
-
-        // 예측 전기세
-        axios
-          .get(`http://3.36.111.107/api/building/${groupId}/${month}/prediction`, { headers })
-          .then(r => setPredictedBill(r.data.result?.predictedValue ?? 0))
-          .catch(() => {});
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   };
 
   return (
@@ -109,8 +133,10 @@ function DashboardPage() {
           value={selectedDate}
           onChange={setSelectedDate}
         />
-        <Card title="예상 전기세" value={`₩ ${predictedBill.toLocaleString()}`} />
-        <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={400} />
+        <Card title="예상 전기세(선택월)" value={`₩ ${predictedBill.toLocaleString()}`} />
+        <Card title="예상 전기세(05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
+        <Card title="예상 전기세(06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
+        <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
       {/* 전기세 분석 (파이) */}
