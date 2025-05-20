@@ -37,7 +37,6 @@ function DashboardPage() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // 빌딩 일별 데이터 조회
     axios
       .get(
         `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
@@ -47,16 +46,15 @@ function DashboardPage() {
         const d = res.data.result;
         if (!d) return;
 
-        // 전체 전기세
+        // 전체 전기세 설정
         setTotalBill(d.totalPower || 0);
-        // 시간별 사용량
+        // 시간별 사용량 배열
         setHourlyData(
           Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
         );
 
         const groupId = d.groupId;
-
-        // 05월 / 06월 예측 전기세 조회
+        // 05월·06월 예측 전기세 동시 요청
         Promise.all([
           axios.get(
             `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
@@ -97,34 +95,39 @@ function DashboardPage() {
         <button
           onClick={fetchData}
           style={{
-            padding: '6px 12px', fontSize: '14px',
-            borderRadius: '6px', border: 'none',
-            cursor: 'pointer', backgroundColor: '#2B3674', color: 'white',
+            padding: '6px 12px',
+            fontSize: '14px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: '#2B3674',
+            color: 'white',
           }}
         >
           데이터 요청하기
         </button>
       </div>
 
-      {/* Controls */}
+      {/* Controls: 건물/날짜/전체전기세 */}
       <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
         <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
         <Control label="날짜 선택" isDate value={selectedDate} onChange={setSelectedDate} />
-        {/* 제거된 전기세 분석영역 대신 예측 카드로 채움 */}
-        <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
-        <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
         <Card title="전체 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
-      {/* 시간별 전력 사용량 차트 */}
+      {/* 2nd row: 05월/06월 예측 전기세 */}
+      <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+        <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
+        <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
+      </div>
+
+      {/* Charts */}
       <ChartContainer title="시간별 전력 사용량" data={hourlyData} />
-      {/* 층별 실시간 사용량 차트 */}
       <ChartContainer title="층별 실시간 사용량" data={floorData} bar />
     </div>
   );
 }
 
-// reusable control 컴포넌트
 function Control({ label, value, onChange, isDate }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width: '300px' }}>
@@ -159,7 +162,6 @@ function Control({ label, value, onChange, isDate }) {
   );
 }
 
-// 카드 컴포넌트
 function Card({ title, value, width = 300 }) {
   return (
     <div style={{ background: 'white', borderRadius: '20px', padding: '20px', width }}>
@@ -169,7 +171,6 @@ function Card({ title, value, width = 300 }) {
   );
 }
 
-// 차트 렌더러
 function ChartContainer({ title, data, bar = false }) {
   return (
     <div
