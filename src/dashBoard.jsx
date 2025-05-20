@@ -23,13 +23,17 @@ function DashboardPage() {
   const [predictedJun, setPredictedJun] = useState(0);
   const [totalBill, setTotalBill] = useState(0);
   const [hourlyData, setHourlyData] = useState([]);
-  const [floorData, setFloorData] = useState([]);
+  const [groupId, setGroupId] = useState(null);
+  const [selectedFloor, setSelectedFloor] = useState(1);
+  const [floorHourlyData, setFloorHourlyData] = useState([]);
 
+  // 로그인 확인
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) navigate('/login');
   }, [navigate]);
 
+  // 건물 & 날짜 데이터 조회
   const fetchData = () => {
     const token = localStorage.getItem('accessToken');
     if (!token) return navigate('/login');
@@ -37,6 +41,7 @@ function DashboardPage() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
+    // 당일 데이터
     axios
       .get(
         `http://3.36.111.107/api/building/name/${selectedBuilding}/daily`,
@@ -51,37 +56,57 @@ function DashboardPage() {
           Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
         );
 
-        const groupId = d.groupId;
-        Promise.all([
-          axios.get(
-            `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
-            { headers }
-          ),
-          axios.get(
-            `http://3.36.111.107/api/building/${groupId}/2021-06/prediction`,
-            { headers }
-          ),
-        ])
-          .then(([mayRes, junRes]) => {
-            setPredictedMay(mayRes.data.result?.predictedValue ?? 0);
-            setPredictedJun(junRes.data.result?.predictedValue ?? 0);
-          })
-          .catch(() => {});
-
-        Promise.all(
-          [1, 2, 3, 4, 5, 6].map((floor) =>
-            axios
-              .get(
-                `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
-                { headers, params: { date: selectedDate } }
-              )
-              .then((r) => ({ floor, usage: r.data.result.totalPower || 0 }))
-              .catch(() => ({ floor, usage: 0 }))
-          )
-        ).then(setFloorData);
+        // 그룹 ID 저장 및 초기 층별 호출
+        setGroupId(d.groupId);
       })
       .catch((err) => console.error(err));
+
+    // 예측 전기세 (5월, 6월)
+    if (groupId) {
+      Promise.all([
+        axios.get(
+          `http://3.36.111.107/api/building/${groupId}/2021-05/prediction`,
+          { headers }
+        ),
+        axios.get(
+          `http://3.36.111.107/api/building/${groupId}/2021-06/prediction`,
+          { headers }
+        ),
+      ])
+        .then(([mayRes, junRes]) => {
+          setPredictedMay(mayRes.data.result?.predictedValue ?? 0);
+          setPredictedJun(junRes.data.result?.predictedValue ?? 0);
+        })
+        .catch(() => {});
+    }
   };
+
+  // 선택된 층의 시간별 사용량 조회
+  const fetchFloorHourly = (floor) => {
+    if (!groupId) return;
+    const token = localStorage.getItem('accessToken');
+    const headers = { Authorization: `Bearer ${token}` };
+
+    axios
+      .get(
+        `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
+        { headers, params: { date: selectedDate } }
+      )
+      .then((r) => {
+        const data = r.data.result.hourlyData || {};
+        setFloorHourlyData(
+          Object.entries(data).map(([h, v]) => ({ hour: h, usage: v }))
+        );
+      })
+      .catch(() => setFloorHourlyData([]));
+  };
+
+  // 그룹ID, 선택날짜, 선택층 변경시 호출
+  useEffect(() => {
+    if (groupId) {
+      fetchFloorHourly(selectedFloor);
+    }
+  }, [groupId, selectedDate, selectedFloor]);
 
   return (
     <div
@@ -114,16 +139,15 @@ function DashboardPage() {
         </button>
       </div>
 
-      {/* 1st row: Controls + 전체 전기세 */}
+      {/* 1st row */}
       <div
-        style={{
-          display: 'flex',
-          gap: '20px',
-          marginTop: '20px',
-          flexWrap: 'wrap',
-        }}
+        style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}
       >
-        <Control label="건물 선택" value={selectedBuilding} onChange={setSelectedBuilding} />
+        <Control
+          label="건물 선택"
+          value={selectedBuilding}
+          onChange={setSelectedBuilding}
+        />
         <Control
           label="날짜 선택"
           isDate
@@ -133,14 +157,9 @@ function DashboardPage() {
         <Card title="당일 전기세" value={`${totalBill.toLocaleString()}원`} width={300} />
       </div>
 
-      {/* 2nd row: 예측 전기세 */}
+      {/* 2nd row */}
       <div
-        style={{
-          display: 'flex',
-          gap: '20px',
-          marginTop: '20px',
-          flexWrap: 'wrap',
-        }}
+        style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}
       >
         <Card title="예상 전기세 (05월)" value={`₩ ${predictedMay.toLocaleString()}`} />
         <Card title="예상 전기세 (06월)" value={`₩ ${predictedJun.toLocaleString()}`} />
@@ -148,7 +167,34 @@ function DashboardPage() {
 
       {/* Charts */}
       <ChartContainer title="시간별 전력 사용량" data={hourlyData} />
-      <ChartContainer title="층별 실시간 사용량" data={floorData} bar />
+
+      {/* Floor selector */}
+      <div
+        style={{ display: 'flex', gap: '8px', marginTop: '40px', flexWrap: 'wrap' }}
+      >
+        {[1, 2, 3, 4, 5, 6].map((floor) => (
+          <button
+            key={floor}
+            onClick={() => setSelectedFloor(floor)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: selectedFloor === floor ? 'none' : '1px solid #2B3674',
+              backgroundColor: selectedFloor === floor ? '#2B3674' : 'white',
+              color: selectedFloor === floor ? 'white' : '#2B3674',
+              cursor: 'pointer',
+            }}
+          >
+            {floor}층
+          </button>
+        ))}
+      </div>
+
+      {/* Floor hourly chart */}
+      <ChartContainer
+        title={`실시간 사용량 (${selectedFloor}층)`}
+        data={floorHourlyData}
+      />
     </div>
   );
 }
@@ -216,7 +262,7 @@ function ChartContainer({ title, data, bar = false }) {
       style={{
         background: 'white',
         borderRadius: '20px',
-        marginTop: '40px',
+        marginTop: '20px',
         padding: '20px',
         height: '300px',
       }}
