@@ -192,7 +192,7 @@ function DashboardPage() {
 
       {/* Floor hourly chart */}
       <ChartContainer
-        title={`실시간 사용량 (${selectedFloor}층)`}
+        title={`시간별 사용량 (${selectedFloor}층)`}
         data={floorHourlyData}
       />
     </div>
