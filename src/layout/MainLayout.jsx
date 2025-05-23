@@ -1,25 +1,38 @@
-import React, { useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
-import './MainLayout.css'             // ← CSS 임포트
+// src/layout/MainLayout.jsx
+import { Outlet, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
 
 export default function MainLayout() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  // 로그인 체크
   useEffect(() => {
-    const token = localStorage.getItem('accessToken')
-    if (!token) {
-      navigate('/login', { replace: true })
+    if (!localStorage.getItem('accessToken')) {
+      navigate('/login', { replace: true });
     }
-  }, [navigate])
+  }, [navigate]);
 
   return (
-    <div className="main-layout">
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',      // 뷰포트 전체 높이
+        overflow: 'hidden',   // 전체적으로 가로 스크롤 방지
+      }}
+    >
       <Sidebar />
-      <div className="content-container">
+
+      {/* 오른쪽 컨텐츠 */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,        // flex 자식이 넘어가지 않도록
+          background: '#F4F7FE',
+          overflowY: 'auto',  // 세로 스크롤만
+        }}
+      >
         <Outlet />
       </div>
     </div>
-  )
+  );
 }
