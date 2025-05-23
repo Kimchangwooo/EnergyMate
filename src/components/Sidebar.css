@@ -1,0 +1,36 @@
+/* src/components/Sidebar.css */
+.sidebar {
+    width: 200px;
+    background: #2B3674;
+    color: white;
+    height: 100vh;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  
+  .sidebar-logo {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .sidebar nav a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    margin: 8px 0;
+  }
+  
+  .sidebar nav a.active {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+  
+  .logout {
+    margin-top: auto;
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  
