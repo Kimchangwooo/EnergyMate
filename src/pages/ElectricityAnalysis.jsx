@@ -54,7 +54,7 @@ export default function ElectricityAnalysis() {
       {/* 1행: 헤더 + 버튼 */}
       <header className="analysis-header">
         <h2>전기세 분석</h2>
-        <button onClick={fetchData}>데이터 요청하기</button>
+        <button className="fetch-button" onClick={fetchData}>데이터 요청하기</button>
       </header>
 
       {/* 2행: 컨트롤 박스 + 당일 전기세 */}
@@ -82,7 +82,7 @@ export default function ElectricityAnalysis() {
         className="card stat-card"
       />
 
-      {/* 3행: 5월·6월 예측전기세 */}
+      {/* 3행: 5월·6월 예측 전기세 */}
       <StatCard
         title="예측 전기세 (05월)"
         value={`₩ ${predMay.toLocaleString()}`}
