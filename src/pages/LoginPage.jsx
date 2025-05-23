@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImage from './assets/EnergyMate_LoGo.png';
+import logoImage from '../assets/EnergyMate_LoGo.png';
 
 function LoginPage() {
   const loginWith = (provider) => {
