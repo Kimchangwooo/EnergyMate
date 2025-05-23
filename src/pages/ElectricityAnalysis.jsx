@@ -1,4 +1,3 @@
-// src/pages/ElectricityAnalysis.jsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import ControlBox from '../components/ControlBox'
@@ -6,11 +5,11 @@ import StatCard   from '../components/StatCard'
 import './ElectricityAnalysis.css'
 
 export default function ElectricityAnalysis() {
-  const [building,   setBuilding]   = useState('building1')
-  const [date,       setDate]       = useState('2021-04-15')
-  const [todayBill,  setTodayBill]  = useState(0)
-  const [predMay,    setPredMay]    = useState(0)
-  const [predJun,    setPredJun]    = useState(0)
+  const [building,  setBuilding]  = useState('building1')
+  const [date,      setDate]      = useState('2021-04-15')
+  const [todayBill, setTodayBill] = useState(0)
+  const [predMay,   setPredMay]   = useState(0)
+  const [predJun,   setPredJun]   = useState(0)
 
   // 로그인 확인
   useEffect(() => {
@@ -27,7 +26,7 @@ export default function ElectricityAnalysis() {
     }
     const headers = { Authorization: `Bearer ${token}` }
 
-    // 1) 당일 전기세 조회
+    // 1) 당일 전기세 + 그룹ID 조회
     axios.get(
       `http://3.36.111.107/api/building/name/${building}/daily`,
       { headers, params: { date } }
@@ -38,7 +37,7 @@ export default function ElectricityAnalysis() {
       setTodayBill(Math.floor(d.totalPower) || 0)
       const gid = d.groupId
 
-      // 2) 5월·6월 예측 전기세 조회 (groupId 응답 직후)
+      // 2) 5월·6월 예측전기세 조회
       Promise.all([
         axios.get(`http://3.36.111.107/api/building/${gid}/2021-05/prediction`, { headers }),
         axios.get(`http://3.36.111.107/api/building/${gid}/2021-06/prediction`, { headers }),
@@ -47,7 +46,7 @@ export default function ElectricityAnalysis() {
         setPredJun(Math.floor(junRes.data.result?.predictedValue) || 0)
       }).catch(console.error)
 
-    }).catch(err => console.error(err))
+    }).catch(console.error)
   }
 
   return (
@@ -58,21 +57,15 @@ export default function ElectricityAnalysis() {
         <button onClick={fetchData}>데이터 요청하기</button>
       </header>
 
-      {/* 2행: 건물 선택 */}
+      {/* 2행: 컨트롤 박스 + 당일 전기세 */}
       <ControlBox label="건물 선택" className="card control-card">
-        <select
-          value={building}
-          onChange={e => setBuilding(e.target.value)}
-        >
+        <select value={building} onChange={e => setBuilding(e.target.value)}>
           {Array.from({ length: 10 }, (_, i) =>
-            <option key={i} value={`building${i+1}`}>
-              {`building${i+1}`}
-            </option>
+            <option key={i} value={`building${i+1}`}>{`building${i+1}`}</option>
           )}
         </select>
       </ControlBox>
 
-      {/* 2행: 날짜 선택 */}
       <ControlBox label="날짜 선택" className="card control-card">
         <input
           type="date"
@@ -83,21 +76,18 @@ export default function ElectricityAnalysis() {
         />
       </ControlBox>
 
-      {/* 2행: 당일 전기세 카드 */}
       <StatCard
         title="당일 전기세"
         value={`${todayBill.toLocaleString()}원`}
         className="card stat-card"
       />
 
-      {/* 3행: 5월 예측 카드 */}
+      {/* 3행: 5월·6월 예측전기세 */}
       <StatCard
         title="예측 전기세 (05월)"
         value={`₩ ${predMay.toLocaleString()}`}
         className="card stat-card"
       />
-
-      {/* 3행: 6월 예측 카드 */}
       <StatCard
         title="예측 전기세 (06월)"
         value={`₩ ${predJun.toLocaleString()}`}
