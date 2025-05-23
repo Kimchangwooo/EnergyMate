@@ -1,18 +1,22 @@
-import { Routes, Route } from 'react-router-dom';
-import LoginPage from './loginPage.jsx';
-import DashboardPage from './dashBoard.jsx';
-import AuthCallback from './authCallback.jsx';
+import { Routes, Route } from 'react-router-dom'
+import LoginPage            from './pages/LoginPage.jsx'
+import AuthCallback         from './pages/AuthCallback.jsx'
+import MainLayout          from './layout/MainLayout.jsx'
+import ElectricityAnalysis from './pages/ElectricityAnalysis.jsx'
+import RealTimeUsage       from './pages/RealTimeUsage.jsx'
+import DataImputation      from './pages/DataImputation.jsx'
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/login/oauth2/success" element={<AuthCallback />} />   {/* ✅ 성공 시 */}
-      <Route path="/login/oauth2/failure" element={<LoginPage />} />      {/* ✅ 실패 시 */}
-    </Routes>
-  );
-}
 
-export default App;
+      <Route path="/" element={<MainLayout />}>
+        <Route index      element={<ElectricityAnalysis />} />
+        <Route path="usage"      element={<RealTimeUsage />} />
+        <Route path="imputation" element={<DataImputation />} />
+      </Route>
+    </Routes>
+  )
+}
