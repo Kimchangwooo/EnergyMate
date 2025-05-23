@@ -1,3 +1,21 @@
+/* src/index.css */
+
+/* 1) 루트 요소를 브라우저 전체에 꽉 채우기 */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2) body 기본 설정: 배경과 가로 스크롤 제거 */
+body {
+  background-color: #F4F7FE;
+  overflow-x: hidden;
+  /* 기존 스타일 중 필요 없으면 지워도 됩니다 */
+}
+
+/* 기존 :root 설정 */
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -20,14 +38,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {
