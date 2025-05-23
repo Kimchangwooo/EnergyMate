@@ -1,29 +1,45 @@
-.analysis-page {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-  
-  .analysis-row {
-    display: flex;
+/* src/pages/ElectricityAnalysis.css */
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+    grid-auto-rows: auto;
     gap: 20px;
-    flex-wrap: wrap;
-    align-items: flex-end;
+    padding: 32px;
+    background: #f4f7fe;
   }
   
-  /* 1행: 컨트롤박스 + 당일 전기세 높이를 맞춰줌 */
-  .controls-row > * {
-    flex: 1;
-    min-width: 250px;
+  /* 1행 헤더 */
+  .analysis-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .analysis-header h2 {
+    margin: 0;
+    color: #2b3674;
+    font-size: 1.5rem;
+  }
+  .analysis-header button {
+    padding: 6px 12px;
+    background: #2b3674;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
   }
   
-  /* 2행: 예측 카드만 모아둠 */
-  .stats-row {
-    justify-content: start;
+  /* 카드 스타일 */
+  .control-card,
+  .stat-card {
+    border-radius: 20px;
+    padding: 20px;
+    background: #fff;
   }
-  
-  .stats-row > * {
-    flex: 1;
-    min-width: 250px;
+  .control-card label {
+    color: #a3aed0;
+    font-size: .875rem;
+    margin-bottom: 8px;
+    display: block;
   }
   
