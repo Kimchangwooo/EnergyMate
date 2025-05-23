@@ -1,0 +1,29 @@
+.analysis-page {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  
+  .analysis-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  
+  /* 1행: 컨트롤박스 + 당일 전기세 높이를 맞춰줌 */
+  .controls-row > * {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  /* 2행: 예측 카드만 모아둠 */
+  .stats-row {
+    justify-content: start;
+  }
+  
+  .stats-row > * {
+    flex: 1;
+    min-width: 250px;
+  }
+  

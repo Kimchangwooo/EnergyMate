@@ -1,0 +1,15 @@
+/* Sidebar + Content 를 좌우로 배치합니다 */
+.main-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  /* 실제 페이지 컨텐츠 부분 */
+  .content-container {
+    flex: 1;                     /* 사이드바를 제외한 나머지 영역 차지 */
+    background: #F4F7FE;
+    padding: 32px;
+    overflow-y: auto;            /* 스크롤 가능 */
+  }
+  

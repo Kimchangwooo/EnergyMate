@@ -1,24 +1,25 @@
-// layout/MainLayout.jsx
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
+import React, { useEffect } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
+import Sidebar from '../components/Sidebar'
+import './MainLayout.css'             // ← CSS 임포트
 
 export default function MainLayout() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
+  // 로그인 체크
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken')
     if (!token) {
-      navigate('/login', { replace: true });
+      navigate('/login', { replace: true })
     }
-  }, [navigate]);
+  }, [navigate])
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="main-layout">
       <Sidebar />
-      <div style={{ flex: 1 }}>
+      <div className="content-container">
         <Outlet />
       </div>
     </div>
-  );
+  )
 }

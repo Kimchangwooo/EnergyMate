@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import ControlBox from '../components/ControlBox'
 import StatCard  from '../components/StatCard'
+import './ElectricityAnalysis.css'    // ← CSS 임포트
 
 export default function ElectricityAnalysis() {
-  const [building, setBuilding] = useState('building1')
-  const [date,    setDate]    = useState('2021-04-15')
-  const [todayBill, setTodayBill]     = useState(0)
-  const [predictMay, setPredictMay]   = useState(0)
-  const [predictJun, setPredictJun]   = useState(0)
-  const [groupId,    setGroupId]      = useState(null)
+  const [building,   setBuilding]   = useState('building1')
+  const [date,       setDate]       = useState('2021-04-15')
+  const [todayBill,  setTodayBill]  = useState(0)
+  const [predictMay, setPredictMay] = useState(0)
+  const [predictJun, setPredictJun] = useState(0)
+  const [groupId,    setGroupId]    = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
@@ -37,19 +38,18 @@ export default function ElectricityAnalysis() {
         setPredictMay(Math.floor(may.data.result.predictedValue))
         setPredictJun(Math.floor(jun.data.result.predictedValue))
       })
+      .catch(() => {})
     }
   }, [building, date, groupId])
 
   return (
-    <div>
-      <div style={{ display:'flex', gap:20, flexWrap:'wrap' }}>
+    <div className="analysis-page">
+      {/* 1행: 컨트롤 + 당일 전기세 */}
+      <div className="analysis-row controls-row">
         <ControlBox label="건물 선택">
-          <select value={building}
-                  onChange={e=>setBuilding(e.target.value)}>
+          <select value={building} onChange={e=>setBuilding(e.target.value)}>
             {Array.from({length:10},(_,i)=>
-              <option key={i} value={`building${i+1}`}>
-                {`building${i+1}`}
-              </option>
+              <option key={i} value={`building${i+1}`}>{`building${i+1}`}</option>
             )}
           </select>
         </ControlBox>
@@ -64,10 +64,11 @@ export default function ElectricityAnalysis() {
           />
         </ControlBox>
 
-        <StatCard title="당일 전기세"   value={`${todayBill.toLocaleString()}원`} />
+        <StatCard title="당일 전기세" value={`${todayBill.toLocaleString()}원`} />
       </div>
 
-      <div style={{ display:'flex', gap:20, marginTop:20, flexWrap:'wrap' }}>
+      {/* 2행: 예측 전기세 */}
+      <div className="analysis-row stats-row">
         <StatCard title="예측 전기세 (05월)" value={`₩ ${predictMay.toLocaleString()}`} />
         <StatCard title="예측 전기세 (06월)" value={`₩ ${predictJun.toLocaleString()}`} />
       </div>
