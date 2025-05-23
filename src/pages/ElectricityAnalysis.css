@@ -29,16 +29,18 @@
     cursor: pointer;
   }
   
-  /* 카드 스타일 */
+  /* 카드 공통 */
   .control-card,
   .stat-card {
     border-radius: 20px;
     padding: 20px;
     background: #fff;
   }
+  
+  /* 컨트롤 박스 내부 레이블 */
   .control-card label {
     color: #a3aed0;
-    font-size: .875rem;
+    font-size: 0.875rem;
     margin-bottom: 8px;
     display: block;
   }
