@@ -24,7 +24,6 @@ export default function ElectricityAnalysis() {
     const headers = { Authorization: `Bearer ${token}` }
 
     try {
-      // 1) 당일 전기세 + groupId
       const { data: dailyData } = await axios.get(
         `http://3.36.111.107/api/building/name/${building}/daily`,
         { headers, params: { date } }
@@ -32,11 +31,12 @@ export default function ElectricityAnalysis() {
       const d = dailyData.result
       if (!d) return
       setTodayBill(Math.floor(d.totalPower))
-      // 2) 5월·6월 예측
+
       const [mayRes, junRes] = await Promise.all([
         axios.get(`http://3.36.111.107/api/building/${d.groupId}/2021-05/prediction`, { headers }),
         axios.get(`http://3.36.111.107/api/building/${d.groupId}/2021-06/prediction`, { headers })
       ])
+
       setPredMay(Math.floor(mayRes.data.result?.predictedValue))
       setPredJun(Math.floor(junRes.data.result?.predictedValue))
     } catch (err) {
@@ -47,19 +47,19 @@ export default function ElectricityAnalysis() {
   const styles = {
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)', // ← 여기! 3열로 고정
+      gridTemplateColumns: 'repeat(3, 1fr)',
       gap: '20px',
       padding: '20px',
       background: '#F4F7FE',
       minHeight: '100vh',
-      boxSizing: 'border-box',
       width: '100%',
+      boxSizing: 'border-box',
     },
     header: {
       gridColumn: '1 / -1',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: '12px',          // 제목-버튼 사이 간격
       marginBottom: '10px',
     },
     fetchButton: {
@@ -155,7 +155,7 @@ export default function ElectricityAnalysis() {
         </div>
       </div>
 
-      {/* 3행: 예측 전기세 (05월) */}
+      {/* 3행: 5월 예측 */}
       <div style={styles.card}>
         <div style={styles.statTitle}>예측 전기세 (05월)</div>
         <div style={styles.statValue}>
@@ -163,7 +163,7 @@ export default function ElectricityAnalysis() {
         </div>
       </div>
 
-      {/* 3행: 예측 전기세 (06월) */}
+      {/* 3행: 6월 예측 */}
       <div style={styles.card}>
         <div style={styles.statTitle}>예측 전기세 (06월)</div>
         <div style={styles.statValue}>
