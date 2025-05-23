@@ -51,12 +51,10 @@ function DashboardPage() {
         const d = res.data.result;
         if (!d) return;
 
-        setTotalBill(d.totalPower || 0);
+        setTotalBill(Math.floor(d.totalPower) || 0);
         setHourlyData(
-          Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: v }))
+          Object.entries(d.hourlyData).map(([h, v]) => ({ hour: h, usage: Math.floor(v) }))
         );
-
-        // 그룹 ID 저장 및 초기 층별 호출
         setGroupId(d.groupId);
       })
       .catch((err) => console.error(err));
@@ -74,8 +72,8 @@ function DashboardPage() {
         ),
       ])
         .then(([mayRes, junRes]) => {
-          setPredictedMay(mayRes.data.result?.predictedValue ?? 0);
-          setPredictedJun(junRes.data.result?.predictedValue ?? 0);
+          setPredictedMay(Math.floor(mayRes.data.result?.predictedValue) || 0);
+          setPredictedJun(Math.floor(junRes.data.result?.predictedValue) || 0);
         })
         .catch(() => {});
     }
@@ -95,7 +93,7 @@ function DashboardPage() {
       .then((r) => {
         const data = r.data.result.hourlyData || {};
         setFloorHourlyData(
-          Object.entries(data).map(([h, v]) => ({ hour: h, usage: v }))
+          Object.entries(data).map(([h, v]) => ({ hour: h, usage: Math.floor(v) }))
         );
       })
       .catch(() => setFloorHourlyData([]));
@@ -166,7 +164,7 @@ function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <ChartContainer title="시간별 전력 사용량" data={hourlyData} />
+      <ChartContainer title="시간별 전력 사용량 (kWh)" data={hourlyData} />
 
       {/* Floor selector */}
       <div
@@ -192,7 +190,7 @@ function DashboardPage() {
 
       {/* Floor hourly chart */}
       <ChartContainer
-        title={`시간별 사용량 (${selectedFloor}층)`}
+        title={`시간별 사용량 (${selectedFloor}층, kWh)`}
         data={floorHourlyData}
       />
     </div>
@@ -273,8 +271,8 @@ function ChartContainer({ title, data, bar = false }) {
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="floor" />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(val) => `${val}`} />
+            <Tooltip formatter={(value) => [`${value}`, 'kWh']} />
             <Legend />
             <Bar dataKey="usage" fill="#8884d8" />
           </BarChart>
@@ -282,8 +280,8 @@ function ChartContainer({ title, data, bar = false }) {
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="hour" />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(val) => `${val}`} />
+            <Tooltip formatter={(value) => [`${value}`, 'kWh']} />
             <Legend />
             <Line type="monotone" dataKey="usage" stroke="#8884d8" activeDot={{ r: 8 }} />
           </RechartsLineChart>
