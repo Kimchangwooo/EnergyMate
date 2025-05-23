@@ -1,3 +1,4 @@
+// src/pages/ElectricityAnalysis.jsx
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import ControlBox from '../components/ControlBox'
@@ -26,7 +27,7 @@ export default function ElectricityAnalysis() {
     }
     const headers = { Authorization: `Bearer ${token}` }
 
-    // 1) 당일 전기세 + 그룹ID 조회
+    // 1) 당일 전기세 + groupId 조회
     axios.get(
       `http://3.36.111.107/api/building/name/${building}/daily`,
       { headers, params: { date } }
@@ -35,9 +36,11 @@ export default function ElectricityAnalysis() {
       if (!d) return
 
       setTodayBill(Math.floor(d.totalPower) || 0)
+
+      // 받은 groupId를 로컬변수로 저장
       const gid = d.groupId
 
-      // 2) 5월·6월 예측전기세 조회
+      // 2) 예측 전기세(5월,6월) 바로 호출
       Promise.all([
         axios.get(`http://3.36.111.107/api/building/${gid}/2021-05/prediction`, { headers }),
         axios.get(`http://3.36.111.107/api/building/${gid}/2021-06/prediction`, { headers }),
@@ -54,18 +57,26 @@ export default function ElectricityAnalysis() {
       {/* 1행: 헤더 + 버튼 */}
       <header className="analysis-header">
         <h2>전기세 분석</h2>
-        <button className="fetch-button" onClick={fetchData}>데이터 요청하기</button>
+        <button className="fetch-button" onClick={fetchData}>
+          데이터 요청하기
+        </button>
       </header>
 
-      {/* 2행: 컨트롤 박스 + 당일 전기세 */}
+      {/* 2행: 건물 선택 */}
       <ControlBox label="건물 선택" className="card control-card">
-        <select value={building} onChange={e => setBuilding(e.target.value)}>
+        <select
+          value={building}
+          onChange={e => setBuilding(e.target.value)}
+        >
           {Array.from({ length: 10 }, (_, i) =>
-            <option key={i} value={`building${i+1}`}>{`building${i+1}`}</option>
+            <option key={i} value={`building${i+1}`}>
+              {`building${i+1}`}
+            </option>
           )}
         </select>
       </ControlBox>
 
+      {/* 2행: 날짜 선택 */}
       <ControlBox label="날짜 선택" className="card control-card">
         <input
           type="date"
@@ -76,18 +87,21 @@ export default function ElectricityAnalysis() {
         />
       </ControlBox>
 
+      {/* 2행: 당일 전기세 */}
       <StatCard
         title="당일 전기세"
         value={`${todayBill.toLocaleString()}원`}
         className="card stat-card"
       />
 
-      {/* 3행: 5월·6월 예측 전기세 */}
+      {/* 3행: 5월 예측 전기세 */}
       <StatCard
         title="예측 전기세 (05월)"
         value={`₩ ${predMay.toLocaleString()}`}
         className="card stat-card"
       />
+
+      {/* 3행: 6월 예측 전기세 */}
       <StatCard
         title="예측 전기세 (06월)"
         value={`₩ ${predJun.toLocaleString()}`}
