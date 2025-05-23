@@ -17,7 +17,6 @@ export default function ElectricityAnalysis() {
   }, []);
 
   const fetchData = async () => {
-    console.log('fetchData 호출!'); // 디버깅용 로그
     const token = localStorage.getItem('accessToken');
     if (!token) {
       window.location.href = '/login';
@@ -59,6 +58,9 @@ export default function ElectricityAnalysis() {
       padding: '20px',
       background: '#F4F7FE',
       minHeight: '100vh',
+      width: '100%',           // 전체 가로폭 사용
+      boxSizing: 'border-box', // padding 포함한 box-sizing
+      overflowX: 'hidden',     // 가로 스크롤 제거
     },
     header: {
       gridColumn: '1 / -1',
