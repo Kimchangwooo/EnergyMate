@@ -115,7 +115,7 @@ export default function RealTimeUsage() {
           <ControlBox label="날짜 선택">
             <input
               type="date"
-              min="2021-04-01"
+              min="2021-04-12"
               max="2021-06-30"
               value={date}
               onChange={e => setDate(e.target.value)}
