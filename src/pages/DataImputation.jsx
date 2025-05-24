@@ -3,26 +3,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import './DataImputation.css';
 
 export default function DataImputation() {
-  const [serverUrl, setServerUrl] = useState('https://b3f3-34-19-111-138.ngrok-free.app');
-  const [health, setHealth]     = useState({ status: 'checking', message: '서버 상태를 확인 중입니다…' });
-  const [file, setFile]         = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const [results, setResults]   = useState(null);
-  const [error, setError]       = useState('');
-  const fileInputRef            = useRef();
+  const [serverUrl, setServerUrl] = useState('');
+  const [health, setHealth]       = useState({
+    status: 'checking',
+    message: '서버 상태를 확인 중입니다…'
+  });
+  const [file,    setFile]        = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [results, setResults]     = useState(null);
+  const [error,   setError]       = useState('');
+  const fileInputRef              = useRef();
 
   // 서버 상태 체크
   const checkHealth = async () => {
     setHealth({ status: 'checking', message: '서버 연결을 확인하는 중…' });
     try {
       const res = await fetch(`${serverUrl}/`, {
-        // ngrok 경고 우회 헤더만 남깁니다
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      // 성공 상태 코드(200~299)면 무조건 연결됨 처리
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setHealth({ status: 'online', message: '서버 연결됨' });
     } catch (err) {
       setHealth({ status: 'offline', message: `서버 연결 실패 • ${err.message}` });
@@ -52,17 +51,20 @@ export default function DataImputation() {
     setLoading(true);
     setError('');
     setResults(null);
+
     try {
       const formData = new FormData();
       formData.append('file', file);
+
       const res = await fetch(`${serverUrl}/predict`, {
         method: 'POST',
-        headers: { 'ngrok-skip-browser-warning':'true' },
+        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData
       });
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (!json.success) throw new Error(json.error || '알 수 없는 오류');
+      if (!json.success) throw new Error(json.error || '알 수 없는 오류 발생');
       setResults(json);
     } catch (err) {
       setError(`❌ 오류: ${err.message}`);
@@ -71,10 +73,11 @@ export default function DataImputation() {
     }
   };
 
-  // 페이지 로드 시 최초 health check
+  // 서버 URL이 변경되면 자동으로 health 체크
   useEffect(() => {
-    checkHealth();
-  }, []);
+    if (serverUrl) checkHealth();
+    else setHealth({ status: 'checking', message: '서버 URL을 입력하세요' });
+  }, [serverUrl]);
 
   return (
     <div className="container">
@@ -93,10 +96,15 @@ export default function DataImputation() {
             className="input-field"
             type="text"
             value={serverUrl}
+            placeholder="https://xxxxx.ngrok-free.app"
             onChange={e => setServerUrl(e.target.value.replace(/\/$/, ''))}
           />
         </div>
-        <button className="btn btn-secondary" onClick={checkHealth}>
+        <button
+          className="btn btn-secondary"
+          onClick={checkHealth}
+          disabled={!serverUrl || health.status === 'checking'}
+        >
           연결 확인
         </button>
         <div className={`status-indicator ${health.status}`}>
@@ -133,11 +141,16 @@ export default function DataImputation() {
           <button
             className="btn btn-primary"
             onClick={uploadAndPredict}
-            disabled={!file || loading}
+            disabled={!file || loading || health.status !== 'online'}
           >
-            {loading ? '처리 중…' : (file ? '데이터 보정 시작' : '파일을 선택해주세요')}
+            {loading
+              ? '처리 중…'
+              : file
+                ? '데이터 보정 시작'
+                : '파일을 선택해주세요'}
           </button>
         </div>
+
         {error && <div className="error-message">{error}</div>}
 
         <div className={`loading ${loading ? 'show' : ''}`}>
@@ -153,9 +166,7 @@ export default function DataImputation() {
             </div>
             <div className="stats-grid">
               <div className="stat-item">
-                <span className="stat-value">
-                  {results.data.original_shape[0]}
-                </span>
+                <span className="stat-value">{results.data.original_shape[0]}</span>
                 <div className="stat-label">건물 수</div>
               </div>
               <div className="stat-item">
@@ -177,6 +188,7 @@ export default function DataImputation() {
                 <div className="stat-label">이상치 비율</div>
               </div>
             </div>
+
             <div className="preview-label">📊 보정된 데이터 미리보기</div>
             <div className="data-preview">
               <pre>
@@ -187,6 +199,7 @@ export default function DataImputation() {
                 )}
               </pre>
             </div>
+
             <div className="btn-group">
               <button
                 className="btn btn-primary"
@@ -194,8 +207,8 @@ export default function DataImputation() {
                   const imputed = results.data.imputed_data;
                   let csv = 'data:text/csv;charset=utf-8,';
                   csv +=
-                    Array.from({ length: imputed[0].length }, (_, i) => `col_${i}`).join(',') +
-                    '\n';
+                    Array.from({ length: imputed[0].length }, (_, i) => `col_${i}`)
+                      .join(',') + '\n';
                   imputed.forEach(r => (csv += r.join(',') + '\n'));
                   const link = document.createElement('a');
                   link.href = encodeURI(csv);
