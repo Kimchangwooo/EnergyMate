@@ -6,19 +6,19 @@ import ChartContainer from '../components/ChartContainer';
 import FloorSelector  from '../components/FloorSelector';
 
 export default function RealTimeUsage() {
-  const [building,    setBuilding]   = useState('building1');
-  const [date,        setDate]       = useState('2021-04-15');
-  const [groupId,     setGroupId]    = useState(null);
-  const [hourData,    setHourData]   = useState([]);
-  const [floor,       setFloor]      = useState(1);
-  const [floorData,   setFloorData]  = useState([]);
+  const [building,  setBuilding]  = useState('building1');
+  const [date,      setDate]      = useState('2021-04-15');
+  const [groupId,   setGroupId]   = useState(null);
+  const [hourData,  setHourData]  = useState([]);
+  const [floor,     setFloor]     = useState(1);
+  const [floorData, setFloorData] = useState([]);
 
-  // 공통 headers
+  // 공통 헤더 생성 함수
   const getHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+    Authorization: `Bearer ${localStorage.getItem('accessToken')}`
   });
 
-  // 전체 시간대별 데이터 로드
+  // 1) 전체 시간대별 사용량 불러오기
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (!token) return window.location.href = '/login';
@@ -26,29 +26,33 @@ export default function RealTimeUsage() {
     axios.get(
       `http://3.36.111.107/api/building/name/${building}/daily`,
       { headers: getHeaders(), params: { date } }
-    ).then(res => {
+    )
+    .then(res => {
       const d = res.data.result;
       setHourData(
         Object.entries(d.hourlyData || {})
-          .map(([hour, usage]) => ({ hour, usage: Math.floor(usage) }))
+          .map(([h, v]) => ({ hour: h, usage: Math.floor(v) }))
       );
       setGroupId(d.groupId);
-    }).catch(console.error);
+    })
+    .catch(console.error);
   }, [building, date]);
 
-  // 선택된 층 데이터 로드
+  // 2) 선택한 층 시간대별 사용량 불러오기
   useEffect(() => {
     if (!groupId) return;
     axios.get(
       `http://3.36.111.107/api/building/${groupId}/floor/${floor}/daily`,
       { headers: getHeaders(), params: { date } }
-    ).then(res => {
+    )
+    .then(res => {
       const d = res.data.result.hourlyData || {};
       setFloorData(
         Object.entries(d)
-          .map(([hour, usage]) => ({ hour, usage: Math.floor(usage) }))
+          .map(([h, v]) => ({ hour: h, usage: Math.floor(v) }))
       );
-    }).catch(console.error);
+    })
+    .catch(console.error);
   }, [groupId, date, floor]);
 
   // 인라인 스타일
@@ -61,38 +65,53 @@ export default function RealTimeUsage() {
       background: '#F4F7FE',
       minHeight: '100vh',
     },
-    controls: {
+    title: {
+      margin: 0,
+      color: '#2B3674',
+      fontSize: '1.75rem',
+      fontWeight: 'bold',
+    },
+    row: {
       display: 'flex',
       gap: '20px',
       flexWrap: 'wrap',
     },
-    cardWrapper: {
+    card: {
       background: 'white',
       borderRadius: '20px',
       padding: '20px',
       flex: '1 1 280px',
     },
+    floorWrapper: {
+      display: 'flex',
+      justifyContent: 'flex-start',
+      gap: '12px',
+    },
   };
 
   return (
     <div style={styles.grid}>
-      {/* 1행: 컨트롤 박스만 */}
-      <div style={styles.controls}>
-        <div style={styles.cardWrapper}>
+      {/* 1행: 페이지 타이틀 */}
+      <h2 style={styles.title}>실시간 사용량</h2>
+
+      {/* 2행: 건물/날짜 선택 카드 */}
+      <div style={styles.row}>
+        <div style={styles.card}>
           <ControlBox label="건물 선택">
             <select
               value={building}
               onChange={e => setBuilding(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
             >
-              {Array.from({ length: 10 }, (_, i) =>
+              {Array.from({ length: 10 }, (_, i) => (
                 <option key={i} value={`building${i+1}`}>
                   {`building${i+1}`}
                 </option>
-              )}
+              ))}
             </select>
           </ControlBox>
         </div>
-        <div style={styles.cardWrapper}>
+        <div style={styles.card}>
           <ControlBox label="날짜 선택">
             <input
               type="date"
@@ -100,21 +119,24 @@ export default function RealTimeUsage() {
               max="2021-06-30"
               value={date}
               onChange={e => setDate(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc' }}
             />
           </ControlBox>
         </div>
       </div>
 
-      {/* 2행: 전체 시간대별 사용량 차트 */}
+      {/* 3행: 전체 시간별 차트 */}
       <ChartContainer
         title="시간별 전력 사용량 (kWh)"
         data={hourData}
       />
 
-      {/* 3행: 층 선택 + 해당 층 차트 */}
-      <div style={{ ...styles.controls, alignItems: 'center' }}>
+      {/* 4행: 층 선택 버튼 */}
+      <div style={styles.floorWrapper}>
         <FloorSelector selected={floor} onSelect={setFloor} />
       </div>
+
+      {/* 5행: 층별 시간별 차트 */}
       <ChartContainer
         title={`시간별 사용량 (${floor}층, kWh)`}
         data={floorData}
