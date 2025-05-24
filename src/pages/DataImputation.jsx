@@ -16,14 +16,14 @@ export default function DataImputation() {
     setHealth({ status: 'checking', message: '서버 연결을 확인하는 중…' });
     try {
       const res = await fetch(`${serverUrl}/`, {
-        headers: { 'Accept':'application/json','ngrok-skip-browser-warning':'true' }
+        // ngrok 경고 우회 헤더만 남깁니다
+        headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setHealth({
-        status: 'online',
-        message: `서버 연결됨 • ${json.device || '-'} • ${json.model_type || '모델 준비됨'}`
-      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      // 성공 상태 코드(200~299)면 무조건 연결됨 처리
+      setHealth({ status: 'online', message: '서버 연결됨' });
     } catch (err) {
       setHealth({ status: 'offline', message: `서버 연결 실패 • ${err.message}` });
     }
