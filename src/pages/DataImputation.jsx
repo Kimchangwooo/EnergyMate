@@ -164,30 +164,7 @@ export default function DataImputation() {
               <div className="success-icon">✓</div>
               <div className="results-title">{results.message}</div>
             </div>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-value">{results.data.original_shape[0]}</span>
-                <div className="stat-label">건물 수</div>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">
-                  {results.data.original_shape[1].toLocaleString()}
-                </span>
-                <div className="stat-label">데이터 포인트</div>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">
-                  {results.data.statistics.num_anomalies.toLocaleString()}
-                </span>
-                <div className="stat-label">이상치 개수</div>
-              </div>
-              <div className="stat-item">
-                <span className="stat-value">
-                  {results.data.statistics.anomaly_percentage.toFixed(1)}%
-                </span>
-                <div className="stat-label">이상치 비율</div>
-              </div>
-            </div>
+           
 
             <div className="preview-label">📊 보정된 데이터 미리보기</div>
             <div className="data-preview">
