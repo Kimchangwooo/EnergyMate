@@ -9,7 +9,7 @@ export default function Sidebar() {
       <nav>
         <NavLink to="/" end>전기세 분석</NavLink>
         <NavLink to="/usage">실시간 사용량</NavLink>
-        <NavLink to="/imputation">결측치 보정</NavLink>
+        <NavLink to="/imputation">전력데이터 보정</NavLink>
       </nav>
       <button className="logout">Logout</button>
     </aside>
